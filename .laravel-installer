@@ -1,0 +1,53 @@
+# Create a new laravel 4 website
+# Include this file in .bashrc like so: $ echo "source ~/.laravel-installer" | sudo tee -a ~/.bashrc
+function newSite() {
+	getLaravel "$1" && createVhost "$1" && addHostsEntry "$1" && enableSite "$1";
+}
+
+# Get Laravel 4 and set correct permissions
+function getLaravel() {
+	cloneLaravel "$1" && setLaravelPermissions "$1" && composerInstall "$1";
+}
+
+function cloneLaravel() {
+	sudo git clone -o laravel -b master https://github.com/laravel/laravel.git /var/www/"$1";	
+}
+
+# Set the laravel file permissions
+function setLaravelPermissions() {
+	sudo chmod -R 777 /var/www/"$1"/app/storage;
+}
+
+# Composer install/update
+function composerInstall() {
+	cd /var/www/"$1" && sudo composer install;
+}
+
+# Create/Write a virtual host
+function createVhost() {
+	echo "
+<VirtualHost *:80>
+	ServerAdmin webmaster@localhost
+	
+	ServerName $1
+	ServerAlias www.$1
+	DocumentRoot /var/www/$1/public
+
+	<Directory /var/www/$1/public>
+		Options Indexes FollowSymLinks MultiViews
+		AllowOverride All
+		Order allow,deny
+		allow from all
+	</Directory>
+</VirtualHost>" | sudo tee /etc/apache2/sites-available/"$1" >/dev/null;
+}
+
+# Add a Virtual Host Entry
+function addHostsEntry() {
+	echo -e "127.0.0.1	$1" | sudo tee -a /etc/hosts;
+}
+
+# Enable site through apache
+function enableSite() {
+	sudo a2ensite "$1" && sudo service apache2 restart;
+}
